@@ -24,4 +24,5 @@ HEADERS  += QTelnetTester.h \
 FORMS    += QTelnetTester.ui
 
 RESOURCES += \
-    resources.qrc
+    resources.qrc \
+    QDarkStyleSheet/qdarkstyle/dark/darkstyle.qrc
