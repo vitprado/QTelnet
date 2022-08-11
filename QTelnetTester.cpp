@@ -1,17 +1,39 @@
 #include "QTelnetTester.h"
 #include "ui_QTelnetTester.h"
 #include <QScrollBar>
+#include <QSettings>
 
 QTelnetTester::QTelnetTester(QWidget *parent) :
 	QMainWindow(parent),
 	ui(new Ui::QTelnetTester),
 	telnet(this)
 {
-	ui->setupUi(this);
-	ui->leAddr->setText("10.50.0.3");
+    ui->setupUi(this);
 	connect( &telnet, SIGNAL(newData(const char*,int)), this, SLOT(addText(const char*,int)) );
 	connect( &telnet, SIGNAL(stateChanged(QAbstractSocket::SocketState)), this, SLOT(onStateChanged(QAbstractSocket::SocketState)) );
 	connect( ui->cbCmd, SIGNAL(command(QString)), this, SLOT(onCommand(QString)));
+
+    QSettings settings("settings.ini", QSettings::IniFormat);
+    settings.beginGroup("DEVICES");
+    QStringList DeviceKeys = settings.childKeys();
+    foreach (QString key, DeviceKeys) {
+         deviceList[key] = settings.value(key).toString();
+    }
+    settings.endGroup();
+    ui->leAddr->setText(deviceList.first());
+    ui->leAddr->setEnabled(false);
+
+    settings.beginGroup("PORTS");
+    QStringList portKeys = settings.childKeys();
+    foreach (QString key, portKeys) {
+         portList[key] = settings.value(key).toString();
+    }
+    settings.endGroup();
+    ui->sbPort->setValue(portList.first().toInt());
+    ui->sbPort->setEnabled(false);
+
+    ui->portListComboBox->addItems(QStringList(portList.keys()));
+    ui->deviceListComboBox->addItems(QStringList(deviceList.keys()));
 }
 
 QTelnetTester::~QTelnetTester()
@@ -74,6 +96,7 @@ void QTelnetTester::onCommand(const QString &cmd)
 	{
 		telnet.sendData(cmd.toLatin1());
 		telnet.sendData("\n");
+        ui->cbCmd->clear();
 	}
 }
 
@@ -90,3 +113,24 @@ void QTelnetTester::addText(const char *msg, int count)
 	ui->teOutput->insertPlainText( QByteArray(msg, count) );
 	ui->teOutput->verticalScrollBar()->setValue(0xFFFFFFF);
 }
+
+void QTelnetTester::on_deviceListComboBox_currentTextChanged(const QString &arg1)
+{
+    ui->leAddr->setText(deviceList[arg1]);
+
+    if( telnet.isConnected() ){
+        telnet.disconnectFromHost();
+    }
+    telnet.connectToHost(ui->leAddr->text(), ui->sbPort->value());
+}
+
+void QTelnetTester::on_portListComboBox_currentTextChanged(const QString &arg1)
+{
+    ui->sbPort->setValue(portList[arg1].toInt());
+
+    if( telnet.isConnected() ){
+        telnet.disconnectFromHost();
+    }
+    telnet.connectToHost(ui->leAddr->text(), ui->sbPort->value());
+}
+

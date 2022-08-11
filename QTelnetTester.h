@@ -14,7 +14,9 @@ class QTelnetTester : public QMainWindow
 	Q_OBJECT
 
 	Ui::QTelnetTester *ui;
-	QTelnet telnet;
+    QTelnet telnet;
+    QMap<QString, QString> deviceList;
+    QMap<QString, QString> portList;
 
 public:
 	explicit QTelnetTester(QWidget *parent = 0);
@@ -25,6 +27,9 @@ private slots:
 
 	void on_btConnect_clicked();
 	void onCommand(const QString &cmd);
+
+    void on_deviceListComboBox_currentTextChanged(const QString &arg1);
+    void on_portListComboBox_currentTextChanged(const QString &arg1);
 
 public slots:
 	void setStatusText(const QString &msg, bool onMainWindow = false);
