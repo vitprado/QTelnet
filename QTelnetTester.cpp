@@ -1,6 +1,9 @@
 #include "QTelnetTester.h"
 #include "ui_QTelnetTester.h"
 #include <QScrollBar>
+#include <QFileDialog>
+#include <QMessageBox>
+#include <QDateTime>
 #include <QSettings>
 
 QTelnetTester::QTelnetTester(QWidget *parent) :
@@ -14,6 +17,12 @@ QTelnetTester::QTelnetTester(QWidget *parent) :
 	connect( ui->cbCmd, SIGNAL(command(QString)), this, SLOT(onCommand(QString)));
 
     QSettings settings("settings.ini", QSettings::IniFormat);
+
+    manualAddressPort = settings.value("MANUAL_ADDRESS_PORT", true).toBool();
+    ui->actionManual_Address_Port->setChecked(manualAddressPort);
+    ui->leAddr->setEnabled(manualAddressPort);
+    ui->sbPort->setEnabled(manualAddressPort);
+
     settings.beginGroup("DEVICES");
     QStringList DeviceKeys = settings.childKeys();
     foreach (QString key, DeviceKeys) {
@@ -21,7 +30,6 @@ QTelnetTester::QTelnetTester(QWidget *parent) :
     }
     settings.endGroup();
     ui->leAddr->setText(deviceList.first());
-    ui->leAddr->setEnabled(false);
 
     settings.beginGroup("PORTS");
     QStringList portKeys = settings.childKeys();
@@ -30,7 +38,6 @@ QTelnetTester::QTelnetTester(QWidget *parent) :
     }
     settings.endGroup();
     ui->sbPort->setValue(portList.first().toInt());
-    ui->sbPort->setEnabled(false);
 
     ui->portListComboBox->addItems(QStringList(portList.keys()));
     ui->deviceListComboBox->addItems(QStringList(deviceList.keys()));
@@ -132,5 +139,56 @@ void QTelnetTester::on_portListComboBox_currentTextChanged(const QString &arg1)
         telnet.disconnectFromHost();
     }
     telnet.connectToHost(ui->leAddr->text(), ui->sbPort->value());
+}
+
+
+void QTelnetTester::on_actionClear_triggered()
+{
+    ui->teOutput->clear();
+}
+
+
+void QTelnetTester::on_actionSave_as_triggered()
+{
+    QDateTime dateTime = dateTime.currentDateTime();
+    QString nameToSave = dateTime.toString("yyyyMMdd_HHmmss") + "_output.txt";
+
+    QString fileName = QFileDialog::getSaveFileName(this, tr("Save Text File"), nameToSave, tr("Text Files (*.txt)"));
+    if (fileName != "")
+    {
+        QFile file(QFileInfo(fileName).absoluteFilePath());
+
+        if (file.exists())
+        {
+            QMessageBox::StandardButton chosenButton
+                = QMessageBox::warning(this, tr("File exists"), tr("The file already exists. Do you want to overwrite it?"),
+                    QMessageBox::Ok | QMessageBox::Cancel,
+                    QMessageBox::Cancel);
+            if (chosenButton != QMessageBox::Ok)
+            {
+                return; //Save was cancelled
+            }
+        }
+        if (!file.open(QIODevice::WriteOnly))
+        {
+            QMessageBox::critical(this, tr("Error"), tr("Failed to save file"));
+            return; //Aborted
+        }
+        //All ok - save data
+        QString text = ui->teOutput->toPlainText();
+        QTextStream out(&file);
+        out << text;
+        file.close();
+    }
+}
+
+
+void QTelnetTester::on_actionManual_Address_Port_toggled(bool arg1)
+{
+    QSettings settings("settings.ini", QSettings::IniFormat);
+    settings.setValue("MANUAL_ADDRESS_PORT", arg1);
+    ui->actionManual_Address_Port->setChecked(arg1);
+    ui->leAddr->setEnabled(arg1);
+    ui->sbPort->setEnabled(arg1);
 }
 

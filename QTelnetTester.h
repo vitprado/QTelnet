@@ -18,6 +18,8 @@ class QTelnetTester : public QMainWindow
     QMap<QString, QString> deviceList;
     QMap<QString, QString> portList;
 
+    bool manualAddressPort;
+
 public:
 	explicit QTelnetTester(QWidget *parent = 0);
 	~QTelnetTester();
@@ -30,6 +32,13 @@ private slots:
 
     void on_deviceListComboBox_currentTextChanged(const QString &arg1);
     void on_portListComboBox_currentTextChanged(const QString &arg1);
+
+    void on_actionClear_triggered();
+
+    void on_actionSave_as_triggered();
+
+    void on_actionManual_Address_Port_toggled(bool arg1);
+
 
 public slots:
 	void setStatusText(const QString &msg, bool onMainWindow = false);
